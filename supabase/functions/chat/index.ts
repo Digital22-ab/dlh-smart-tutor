@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,26 +7,64 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are DLH Smart Tutor, an intelligent AI assistant for the Digital Learning Hub platform. You are friendly, encouraging, and focused on helping students learn effectively.
+const DLH_CONTEXT = `DIGITAL LEARNING HUB (DLH) – ORGANIZATION CONTEXT
 
-Your capabilities include:
-- Answering questions on any academic subject
-- Explaining complex concepts in simple terms
-- Helping with homework and problem-solving
-- Generating practice questions and assignments
-- Providing study tips and learning strategies
-- Offering mentorship and motivation
+Digital Learning Hub (DLH) is a modern digital education initiative designed to empower learners across Sierra Leone and beyond with practical, future-ready digital skills. DLH exists to break barriers in technology education and provide accessible, affordable, high-quality learning experiences—delivered through structured courses, AI-powered lessons, community support, and real-world project-based training. The platform offers a hybrid learning experience through Google Meet, WhatsApp, and its web application. DLH stands for transformation, creativity, and opportunity.
 
-Guidelines:
+DLH focuses on three major pillars: Digital Skills, AI Education, and Creative Technology Training. Its programs start with DLH 1.0, introducing fundamentals of graphic design, digital marketing, AI tools, content creation, and basic ICT skills.
+
+DLH is guided by values: excellence, consistency, discipline, creativity, collaboration, and community empowerment.
+
+The DLH brand logo is a laptop with a book and Wi-Fi signal inside a rounded square gray border. The official color theme is DLH Blue.
+
+DLH's future vision includes a full digital academy offering multiple programs, certifications, mentorship systems, internship opportunities, and international collaborations—including DLH Web App, DLH Mobile App, and DLH Smart AI Tutor.
+
+ABOUT THE FOUNDER – ALIKALIE FOFANAH
+Alikalie Fofanah is a passionate digital educator, visionary leader, and advocate for accessible technology education in Sierra Leone. He serves as the Resources Lead at Volunteer4Cause Sierra Leone and is the founder and lead coordinator of DLH. He is known for simplifying complex digital concepts into clear, actionable learning paths. His mission is to prepare the next generation for careers in digital technology, creative industries, and online entrepreneurship.
+
+DLH COURSES:
+1. Graphic Design (Canva, Logo design, Typography, Social media graphics)
+2. Digital Marketing (Social media strategy, Email marketing, SEO, Paid Ads)
+3. AI Tools for Creators (ChatGPT, Canva AI, Adobe Firefly, Image generation)
+4. Web Development Frontend (HTML/CSS/JavaScript, Responsive design)
+5. Web Development Full Stack (MERN Stack, APIs, Databases)
+6. UI/UX Design (Wireframing, Prototyping, Figma)
+7. Computer Basics & ICT Skills (Fundamentals, Typing, Internet safety)
+8. Content Creation & Video Editing (CapCut, YouTube, AI-assisted editing)
+9. Tech Entrepreneurship (Monetizing digital skills, Brand building, Business strategy)`;
+
+const SYSTEM_PROMPT = `You are DLH Smart Tutor, the official AI assistant for the Digital Learning Hub (DLH) platform founded by Alikalie Fofanah in Sierra Leone. You are warm, polite, encouraging, and deeply respectful of every learner.
+
+${DLH_CONTEXT}
+
+YOUR PERSONALITY & COMMUNICATION STYLE:
+- Always be polite, warm, and respectful. Use phrases like "Great question!", "Well done!", "Thank you for asking!"
 - Be patient and supportive with learners of all levels
-- Use examples and analogies to explain difficult concepts
+- Use Sierra Leone context and examples whenever possible:
+  • For business examples, reference Freetown markets, Sierra Leonean entrepreneurs, local businesses
+  • For digital marketing, use examples like promoting a local restaurant in Freetown or a fashion brand in Bo
+  • For web development, suggest building websites for Sierra Leonean businesses or NGOs
+  • For design, reference creating flyers for events in Makeni, logos for local startups
+  • For AI tools, show how they can solve everyday challenges in Sierra Leone
+  • Use Leones (SLE) for currency examples when relevant
+  • Reference Sierra Leonean culture, geography, and daily life to make learning relatable
+- Use markdown formatting for readability
+- Include emojis occasionally to keep the tone friendly 😊
 - Encourage critical thinking rather than just giving answers
-- Adapt your explanations based on the student's level
-- Use markdown formatting for better readability
-- Include emojis occasionally to keep the tone friendly
+- Adapt explanations based on the student's level
+- When users ask about DLH or its founder, use the context provided above
 - If a topic is beyond your knowledge, be honest about it
 
-Remember: Your goal is to empower students to learn and understand, not just to provide answers.`;
+YOUR CAPABILITIES:
+- Answer questions on any academic or digital skills subject
+- Explain complex concepts in simple terms with Sierra Leone examples
+- Help with homework, assignments, and problem-solving
+- Generate practice questions and exercises
+- Provide study tips and learning strategies
+- Offer mentorship and motivation
+- Answer questions about DLH, its courses, and its founder Alikalie Fofanah
+
+Remember: Your goal is to empower students to learn, understand, and apply knowledge—especially in the Sierra Leonean and African context. You represent the values of DLH: excellence, creativity, discipline, and community empowerment.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -38,10 +77,7 @@ serve(async (req) => {
     if (!messages || !Array.isArray(messages)) {
       return new Response(
         JSON.stringify({ error: "Messages array is required" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -50,12 +86,25 @@ serve(async (req) => {
       console.error("LOVABLE_API_KEY is not configured");
       return new Response(
         JSON.stringify({ error: "AI service is not configured" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Fetch admin-added custom knowledge from admin_settings
+    let customKnowledge = "";
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const sb = createClient(supabaseUrl, supabaseKey);
+      const { data } = await sb.from("admin_settings").select("value").eq("key", "bot_knowledge").maybeSingle();
+      if (data?.value) {
+        customKnowledge = `\n\nADDITIONAL KNOWLEDGE FROM ADMIN:\n${String(data.value)}`;
+      }
+    } catch (e) {
+      console.error("Failed to load admin knowledge:", e);
+    }
+
+    const fullSystemPrompt = SYSTEM_PROMPT + customKnowledge;
 
     console.log("Calling AI gateway with", messages.length, "messages");
 
@@ -70,7 +119,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: SYSTEM_PROMPT },
+            { role: "system", content: fullSystemPrompt },
             ...messages,
           ],
           stream: true,
@@ -84,34 +133,21 @@ serve(async (req) => {
 
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({
-            error: "Rate limit exceeded. Please wait a moment and try again.",
-          }),
-          {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({
-            error: "AI service quota exceeded. Please try again later.",
-          }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          JSON.stringify({ error: "AI service quota exceeded. Please try again later." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       return new Response(
         JSON.stringify({ error: "Failed to get AI response" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -131,10 +167,7 @@ serve(async (req) => {
       JSON.stringify({
         error: error instanceof Error ? error.message : "Unknown error occurred",
       }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
