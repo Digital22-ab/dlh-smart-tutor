@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +19,7 @@ interface Course {
 }
 
 export default function Courses() {
+  const navigate = useNavigate();
   const [dbCourses, setDbCourses] = useState<Course[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -84,7 +86,7 @@ export default function Courses() {
                   </div>
                   <div className="flex items-center gap-1 text-dlh-warning"><Star size={14} fill="currentColor" /><span className="text-sm font-medium">4.8</span></div>
                 </div>
-                <Button className="w-full mt-4 bg-gradient-primary hover:opacity-90">Start Learning<ArrowRight className="ml-2 h-4 w-4" /></Button>
+                <Button className="w-full mt-4 bg-gradient-primary hover:opacity-90" onClick={() => navigate(`/courses/${course.id}`)}>Start Learning<ArrowRight className="ml-2 h-4 w-4" /></Button>
               </div>
             </motion.div>
           ))}

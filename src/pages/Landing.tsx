@@ -1,6 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { DLH_COURSES } from "@/lib/courses";
 import { DLHLogo } from "@/components/DLHLogo";
 import {
   MessageSquare,
@@ -242,25 +243,25 @@ export default function Landing() {
                 <div className="absolute inset-0 bg-gradient-accent opacity-10 blur-3xl rounded-full" />
                 <div className="relative bg-card rounded-2xl shadow-xl border border-border p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-semibold">Learning Progress</h3>
-                    <span className="text-sm text-muted-foreground">This Week</span>
+                    <h3 className="font-semibold">Digital Courses</h3>
+                    <Link to="/auth?mode=signup" className="text-sm text-primary hover:underline">View All</Link>
                   </div>
-                  <div className="space-y-4">
-                    {["Mathematics", "Physics", "English"].map((subject, i) => (
-                      <div key={subject}>
-                        <div className="flex justify-between mb-2">
-                          <span className="text-sm">{subject}</span>
-                          <span className="text-sm text-muted-foreground">
-                            {[75, 60, 90][i]}%
-                          </span>
+                  <div className="space-y-3">
+                    {DLH_COURSES.slice(0, 6).map((course) => (
+                      <Link
+                        key={course.id}
+                        to={`/auth?mode=signup&course=${course.id}`}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group"
+                      >
+                        <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                          <img src={course.image_url} alt={course.title} className="w-full h-full object-cover" />
                         </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-primary rounded-full transition-all duration-500"
-                            style={{ width: `${[75, 60, 90][i]}%` }}
-                          />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{course.title}</p>
+                          <p className="text-xs text-muted-foreground">{course.category}</p>
                         </div>
-                      </div>
+                        <ArrowRight size={14} className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                      </Link>
                     ))}
                   </div>
                 </div>
