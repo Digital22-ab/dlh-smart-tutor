@@ -404,10 +404,10 @@ export default function Chat() {
                   </p>
                   <div className="mt-6 flex flex-wrap justify-center gap-2">
                     {[
-                      "Explain photosynthesis",
-                      "Help with math homework",
-                      "Write a study plan",
-                      "Quiz me on history",
+                      "What is Digital Learning Hub?",
+                      "Help me learn graphic design",
+                      "How can I start freelancing in Sierra Leone?",
+                      "Tell me about DLH courses",
                     ].map((suggestion) => (
                       <button
                         key={suggestion}
