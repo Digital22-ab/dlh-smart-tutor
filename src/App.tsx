@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Chat from "./pages/Chat";
 import ImageGenerator from "./pages/ImageGenerator";
 import Courses from "./pages/Courses";
+import CourseDetail from "./pages/CourseDetail";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
@@ -61,6 +62,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Courses />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/courses/:courseId"
+              element={
+                <ProtectedRoute>
+                  <CourseDetail />
                 </ProtectedRoute>
               }
             />
