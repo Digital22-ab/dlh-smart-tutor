@@ -1,16 +1,73 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, BookOpen, MessageSquare, Clock, Users, Star, CheckCircle } from "lucide-react";
+import { ArrowLeft, BookOpen, MessageSquare, Clock, Users, Star, CheckCircle, Loader2 } from "lucide-react";
 import { DLH_COURSES } from "@/lib/courses";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function CourseDetail() {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const [dbCourse, setDbCourse] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const course = DLH_COURSES.find((c) => c.id === courseId);
+  // Try to find in static courses first
+  const staticCourse = DLH_COURSES.find((c) => c.id === courseId);
+
+  useEffect(() => {
+    if (staticCourse) {
+      setLoading(false);
+      return;
+    }
+    // If not found in static, look up in DB
+    const fetchCourse = async () => {
+      const { data } = await supabase
+        .from("courses")
+        .select("*")
+        .eq("id", courseId!)
+        .single();
+      setDbCourse(data);
+      setLoading(false);
+    };
+    fetchCourse();
+  }, [courseId, staticCourse]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="animate-spin" size={32} />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Build a unified course object
+  const course = staticCourse
+    ? staticCourse
+    : dbCourse
+    ? {
+        id: dbCourse.id,
+        title: dbCourse.title,
+        description: dbCourse.description || "",
+        category: dbCourse.category || "Other",
+        image_url: dbCourse.image_url || "",
+        topics: [] as string[],
+      }
+    : null;
+
+  // For DB courses, try to match a static course by title to get topics & AI prompt
+  const matchedStatic = dbCourse
+    ? DLH_COURSES.find(
+        (c) => c.title.toLowerCase() === dbCourse.title?.toLowerCase()
+      )
+    : null;
+
+  const topics = staticCourse?.topics || matchedStatic?.topics || [];
+  const chatCourseId = staticCourse?.id || matchedStatic?.id || courseId;
 
   if (!course) {
     return (
@@ -32,10 +89,11 @@ export default function CourseDetail() {
         </Button>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          {/* Hero */}
-          <div className="aspect-video rounded-2xl overflow-hidden bg-muted mb-8">
-            <img src={course.image_url} alt={course.title} className="w-full h-full object-cover" />
-          </div>
+          {course.image_url && (
+            <div className="aspect-video rounded-2xl overflow-hidden bg-muted mb-8">
+              <img src={course.image_url} alt={course.title} className="w-full h-full object-cover" />
+            </div>
+          )}
 
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <Badge className="bg-gradient-primary text-primary-foreground">{course.category}</Badge>
@@ -50,25 +108,25 @@ export default function CourseDetail() {
           <h1 className="text-2xl lg:text-3xl font-bold mb-4">{course.title}</h1>
           <p className="text-muted-foreground mb-8">{course.description}</p>
 
-          {/* Topics */}
-          <div className="bg-card rounded-2xl border border-border p-6 mb-8">
-            <h2 className="text-lg font-semibold mb-4">What You'll Learn</h2>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {course.topics.map((topic) => (
-                <div key={topic} className="flex items-center gap-3">
-                  <CheckCircle className="text-dlh-teal flex-shrink-0" size={18} />
-                  <span className="text-sm">{topic}</span>
-                </div>
-              ))}
+          {topics.length > 0 && (
+            <div className="bg-card rounded-2xl border border-border p-6 mb-8">
+              <h2 className="text-lg font-semibold mb-4">What You'll Learn</h2>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {topics.map((topic) => (
+                  <div key={topic} className="flex items-center gap-3">
+                    <CheckCircle className="text-dlh-teal flex-shrink-0" size={18} />
+                    <span className="text-sm">{topic}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4">
             <Button
               size="lg"
               className="bg-gradient-primary hover:opacity-90 flex-1"
-              onClick={() => navigate(`/chat?course=${course.id}`)}
+              onClick={() => navigate(`/chat?course=${chatCourseId}`)}
             >
               <MessageSquare className="mr-2 h-5 w-5" />
               Start Learning with AI Tutor

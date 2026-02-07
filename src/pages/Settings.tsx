@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,6 +42,19 @@ export default function Settings() {
     bio: profile?.bio || "",
     course_of_interest: profile?.course_of_interest || "",
   });
+
+  // Sync form when profile loads
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || "",
+        phone_number: profile.phone_number || "",
+        country: profile.country || "",
+        bio: profile.bio || "",
+        course_of_interest: profile.course_of_interest || "",
+      });
+    }
+  }, [profile]);
 
   const initials = profile?.full_name
     ? profile.full_name

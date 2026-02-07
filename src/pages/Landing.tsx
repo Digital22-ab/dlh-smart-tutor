@@ -302,7 +302,7 @@ export default function Landing() {
         <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <DLHLogo size="sm" />
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Digital Learning Hub. All rights reserved.
+            © {new Date().getFullYear()} Digital Learning Hub. Made by Alikalie.
           </p>
         </div>
       </footer>
