@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { DLHLogo } from "@/components/DLHLogo";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -28,13 +29,12 @@ import {
   Shield,
 } from "lucide-react";
 
-const navigation = [
+const baseNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "AI Chat", href: "/chat", icon: MessageSquare },
   { name: "Image Generator", href: "/image-generator", icon: Image },
   { name: "Courses", href: "/courses", icon: BookOpen },
   { name: "Settings", href: "/settings", icon: Settings },
-  { name: "Admin", href: "/admin", icon: Shield },
 ];
 
 interface DashboardLayoutProps {
@@ -46,6 +46,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
+  const isAdmin = useAdminRole();
+
+  const navigation = isAdmin
+    ? [...baseNavigation, { name: "Admin", href: "/admin", icon: Shield }]
+    : baseNavigation;
 
   const handleSignOut = async () => {
     await signOut();
